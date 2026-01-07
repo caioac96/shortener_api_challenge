@@ -1,10 +1,13 @@
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Url } from "./url.entity";
 
-@Entity('User')
+@Entity('users')
 export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    @Column()
+    name: string;
 
     @Column()
     mail: string;
