@@ -3,13 +3,13 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UrlModule } from 'modules/url/url.module';
-import { UserModule } from 'modules/user/user.module';
 import { env } from 'config/env';
+import { UsersModule } from 'modules/users/users.module';
 
 @Module({
   imports: [
     UrlModule,
-    UserModule,
+    UsersModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: env.DB_HOST,

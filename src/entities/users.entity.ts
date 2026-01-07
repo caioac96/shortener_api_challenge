@@ -1,6 +1,7 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Url } from "./url.entity";
 
-@Entity('user')
+@Entity('User')
 export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -11,8 +12,8 @@ export class User {
     @Column()
     password: string;
 
-    @Column()
-    urls: string[];
+    @OneToMany(() => Url, url => url.user)
+    urls: Url[];
 
     @CreateDateColumn()
     createdAt: Date;
