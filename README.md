@@ -96,3 +96,29 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
+
+## Deploy LOCALHOST - Shortener API [PT-BR]:
+O deploy da aplicação poderá seguir a instrução padrão do NestJS (yarn start), para rodar somente em localhhost, mas não vai ter acesso ao Banco de Dados.
+Para isso, preparei um script rápido para executar a Shortener API via Docker.
+
+1 - Certifique-se de que o Docker está instalado corretamente na sua máquina;
+2 - Após a verificação, a aplicação do Docker deve estar aberta/em execução (ícone de baleia);
+3 - Para realizar o primeiro deploy e a execução da API, digite o comando a seguir no terminal e clique em "Enter":
+```bash
+  docker compose up --build
+```
+4 - Esse processo pode demorar alguns minutos, mas executará tudo o que é necessário: a instância Docker na sua máquina, configuração do Banco de Dados PostgreSQL dentro do Docker, criação das tabelas necessárias com 'migration' incluso, execução do gerenciador de pacotes, e execução da aplicação propriamente dita;
+5 - Para utilizar o serviço com autenticação de usuário, segue uma dica adicional: antes de tudo crie um usuário com 'name', 'mail' e 'password' antes de qualquer coisa, no body da requisição, no endpoint /users;
+6 - Com a API já em execução, qualquer dúvida sobre documentação, poderá consultar o endpoint: http://localhost:3000/api - abrirá o Swagger da API.
+
+
+
+
+
+
+
+
+
