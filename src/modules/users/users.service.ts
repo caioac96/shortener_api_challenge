@@ -4,9 +4,13 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "entities/users.entity";
 import { Repository } from "typeorm";
 import { CreateUserDto } from "./dtos/create-user.dto";
+import { log } from 'utils/logger.util';
 
 @Injectable()
 export class UsersService {
+  private users: User[] = [
+    { id: "96aa4b21-6261-4c5f-a0ba-10c614c15ed6", name: "Caio C", mail: 'caio1@teste.com.br', password: '321321', urls: [] }
+  ];
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
@@ -28,6 +32,8 @@ export class UsersService {
         ...dto,
         password: hash,
       });
+
+      log("User created!");
 
       return this.usersRepository.save(user);
     } catch (error) {
@@ -52,5 +58,9 @@ export class UsersService {
     } catch (error) {
       throw new InternalServerErrorException('There was a problem searching for the user');
     }
+  }
+
+  async findByMail(mail: string) {
+    return this.users.find(u => u.mail === mail);
   }
 }

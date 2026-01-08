@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { User } from "./users.entity";
 
 @Entity('url')
@@ -15,8 +15,12 @@ export class Url {
     @Column({ default: 0 })
     accessCount: number;
 
-    @ManyToOne(() => User, user => user.urls)
-    user: User;
+    @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'userId' })
+    user?: User;
+
+    @Column({ nullable: true })
+    newUrl?: string
 
     @CreateDateColumn()
     createdAt: Date;

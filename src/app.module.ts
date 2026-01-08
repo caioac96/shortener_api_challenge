@@ -20,7 +20,8 @@ import { AuthModule } from 'modules/auth/auth.module';
       password: env.DB_PASSWORD,
       database: env.DB_NAME,
       autoLoadEntities: true, // Pelo o que li, só funciona em runtime, não em migrations
-      synchronize: false,
+      synchronize: true,
+      dropSchema: true
     }),
   ],
   controllers: [AppController],
