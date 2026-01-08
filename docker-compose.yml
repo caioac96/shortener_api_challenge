@@ -4,20 +4,16 @@ services:
   postgres:
     image: postgres:16
     container_name: shortener_db
-    restart: always
     ports:
       - "5432:5432"
     environment:
       POSTGRES_DB: shortener
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: 983b10b1c56fa28ca33684d9d903f7a8
-    volumes:
-      - pgdata:/var/lib/postgresql/data
 
   api:
     build: .
     container_name: shortener_api
-    command: yarn start:debug
     ports:
       - "3000:3000"
       - "9229:9229"
@@ -27,6 +23,3 @@ services:
       - postgres
     env_file:
       - .env
-
-volumes:
-  pgdata:

@@ -5,27 +5,28 @@ import { Url } from 'entities/url.entity';
 import { IsNull, Repository } from 'typeorm';
 import { ShortenUrlDto } from './dtos/shorten-url.dto';
 import { User } from 'entities/users.entity';
-import { Response as ResponseFromExpress } from 'express';
 import { UpdateUrlDto } from './dtos/update-url.dto';
 
 @Injectable()
 export class UrlService {
-  constructor( 
+  constructor(
     @InjectRepository(Url)
     private readonly urlRepository: Repository<Url>,
-  ) {}
+  ) { }
 
   async shorten(dto: ShortenUrlDto, user?: User | null) {
+    if (!this.isValidUrl(dto.originalUrl)) {
+      throw new BadRequestException('Invalid URL');
+    }
+
     if (user && dto.alias) {
       return this.createWithAlias(dto.originalUrl, dto.alias, user.id);
     }
 
-    return this.createRandomSlug(dto.originalUrl);
+    return this.createRandomSlug(dto.originalUrl, user?.id);
   }
 
-  async createRandomSlug(originalUrl: string) {
-    if (!this.isValidUrl(originalUrl)) throw BadRequestException;
-
+  private async createRandomSlug(originalUrl: string, userId?: string) {
     let slug: string;
     let attempts = 0;
 
@@ -33,29 +34,40 @@ export class UrlService {
       slug = this.generateRandomSlug();
       attempts++;
     } while (
-      await this.urlRepository.exists({ where: { shortCode: slug } }) && attempts < 5
+      await this.urlRepository.exists({ where: { shortCode: slug } }) &&
+      attempts < 5
     );
 
-    if (attempts === 5) throw InternalServerErrorException;
+    if (attempts === 5) {
+      throw new InternalServerErrorException('Failed to generate unique slug');
+    }
 
     return this.urlRepository.save({
       originalUrl,
       shortCode: slug,
+      userId: userId ?? null,
       accessCount: 0,
     });
   }
 
-  async createWithAlias(originalUrl: string, alias: string, userId: string) {
-    if (!this.isValidUrl(originalUrl)) throw BadRequestException;
-
+  private async createWithAlias(
+    originalUrl: string,
+    alias: string,
+    userId: string,
+  ) {
     const normalized = alias.toLowerCase();
 
-    if (!/^[a-z0-9_-]{3,30}$/.test(normalized))
-      throw BadRequestException;
+    if (!/^[a-z0-9_-]{3,30}$/.test(normalized)) {
+      throw new BadRequestException('Invalid alias format');
+    }
 
-    const exists = await this.urlRepository.exists({ where: { shortCode: normalized } });
+    const exists = await this.urlRepository.exists({
+      where: { shortCode: normalized },
+    });
 
-    if (exists) throw ConflictException;
+    if (exists) {
+      throw new ConflictException('Alias already in use');
+    }
 
     return this.urlRepository.save({
       originalUrl,
@@ -65,15 +77,25 @@ export class UrlService {
     });
   }
 
-  async findAll() {
-    try {
-      return await this.urlRepository.find();
-    } catch (error) {
-      throw new NotFoundException();
-    }
+  async findOne(id: string) {
+    return this.urlRepository.findOneBy({ id: id });
   }
 
-  async updateUrl(shortCode: string, dto: UpdateUrlDto) {
+  async findAllByUser(userId: string) {
+    return this.urlRepository.find({
+      where: {
+        user: { id: userId },
+        deletedAt: IsNull(),
+      },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateIfOwner(
+    shortCode: string,
+    dto: UpdateUrlDto,
+    userId: string,
+  ) {
     const url = await this.urlRepository.findOne({
       where: {
         shortCode,
@@ -85,26 +107,38 @@ export class UrlService {
       throw new NotFoundException('URL not found');
     }
 
+    if (url.user?.id !== userId) {
+      throw new ConflictException('You do not own this URL');
+    }
+
     Object.assign(url, dto);
 
     return this.urlRepository.save(url);
   }
 
+  async deleteIfOwner(shortCode: string, userId: string) {
+    const url = await this.urlRepository.findOne({
+      where: {
+        shortCode,
+        deletedAt: IsNull(),
+      },
+    });
 
-  async deleteUrl(shortCode: string) {
-    const result = await this.urlRepository.update(
-      { shortCode, deletedAt: IsNull() },
-      { deletedAt: new Date() },
-    );
-
-    if (result.affected === 0) {
+    if (!url) {
       throw new NotFoundException('URL not found');
     }
+
+    if (url.user?.id !== userId) {
+      throw new ConflictException('You do not own this URL');
+    }
+
+    url.deletedAt = new Date();
+    await this.urlRepository.save(url);
 
     return { success: true };
   }
 
-  async redirectShort(short: string, res: ResponseFromExpress) {
+  async redirectShort(short: string) {
     const url = await this.urlRepository.findOne({
       where: {
         shortCode: short,
@@ -112,41 +146,36 @@ export class UrlService {
       },
     });
 
-    if (!url) throw new NotFoundException();
+    if (!url) {
+      throw new NotFoundException('Short URL not found');
+    }
 
-    await this.urlRepository.increment(
-      { id: url.id },
-      'accessCount',
-      1,
-    );
+    await this.urlRepository.increment({ id: url.id }, 'accessCount', 1);
 
-    return res.redirect(302, url.originalUrl);
+    return url.originalUrl;
   }
 
-  private isValidUrl = (url: string) => {
+  private isValidUrl(url: string) {
     try {
       const parsed = new URL(url);
       return ['http:', 'https:'].includes(parsed.protocol);
     } catch {
       return false;
     }
-  };
+  }
 
   private generateRandomSlug(): string {
-    try {
-      const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-      const length = 6;
+    const alphabet =
+      '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const length = 6;
 
-      const bytes = randomBytes(length);
-      let result = '';
+    const bytes = randomBytes(length);
+    let result = '';
 
-      for (let i = 0; i < length; i++) {
-        result += alphabet[bytes[i] % alphabet.length];
-      }
-
-      return result;
-    } catch (error) {
-      throw new InternalServerErrorException('There was a problem generating random slug');
+    for (let i = 0; i < length; i++) {
+      result += alphabet[bytes[i] % alphabet.length];
     }
+
+    return result;
   }
 }

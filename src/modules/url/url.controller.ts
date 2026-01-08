@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Redirect, Res, UseGuards } from '@nestjs/common';
 import { UrlService } from './url.service';
 import { UpdateUrlDto } from './dtos/update-url.dto';
 import { OptionalAuthGuard } from 'modules/auth/optional-auth.guard';
@@ -22,25 +22,37 @@ export class UrlController {
 
   @Get('my-urls')
   @UseGuards(JwtAuthGuard)
-  getUrls() {
-    return this.urlService.findAll();
+  getUrls(@CurrentUser() user: User) {
+    return this.urlService.findAllByUser(user.id);
   }
 
   @Put('my-urls/:id')
   @UseGuards(JwtAuthGuard)
-  updateUrl(@Param('id') id: string, @Body() updateUrlDto: UpdateUrlDto) {
-    return this.urlService.updateUrl(id, updateUrlDto);
+  updateUrl(
+    @Param('id') id: string,
+    @Body() dto: UpdateUrlDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.urlService.updateIfOwner(id, dto, user.id);
   }
 
   @Delete('my-urls/:id')
   @UseGuards(JwtAuthGuard)
-  deleteUrl(@Param('id') id: string) {
-    return this.urlService.deleteUrl(id);
+  deleteUrl(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.urlService.deleteIfOwner(id, user.id);
   }
 
   @Get(':short')
-  @UseGuards(JwtAuthGuard)
-  redirectShort(@Param('short') short: string, @Req() req) {
-    return this.urlService.redirectShort(short, req);
+  @Redirect()
+  async redirectShort(@Param('short') short: string) {
+    const url = await this.urlService.redirectShort(short);
+
+    return {
+      url,
+      statusCode: 302,
+    };
   }
 }

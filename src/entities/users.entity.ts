@@ -18,12 +18,12 @@ export class User {
     @OneToMany(() => Url, url => url.user)
     urls: Url[];
 
-    @CreateDateColumn()
-    createdAt: Date;
+    @CreateDateColumn({ type: 'timestamp' })
+    createdAt?: Date;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+    @UpdateDateColumn({ type: 'timestamp' })
+    updatedAt?: Date;
 
-    @DeleteDateColumn()
-    deletedAt: Date;
+    @DeleteDateColumn({ type: 'timestamp', nullable: true })
+    deletedAt?: Date | null;
 }
