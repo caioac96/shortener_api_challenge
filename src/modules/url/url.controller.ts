@@ -1,13 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { UrlService } from './url.service';
 import { UpdateUrlDto } from './dtos/update-url.dto';
-import { OptionalAuthGuard } from 'guards/optional-auth.guard';
+import { OptionalAuthGuard } from 'modules/auth/optional-auth.guard';
 import { ShortenUrlDto } from './dtos/shorten-url.dto';
 import { CurrentUser } from 'decorators/current-user.decorator';
 import { User } from 'entities/users.entity';
-import { JwtAuthGuard } from 'guards/auth.guard';
+import { JwtAuthGuard } from 'modules/auth/auth.guard';
 
-@Controller()
+@Controller('url')
 export class UrlController {
   constructor(private readonly urlService: UrlService) { }
 

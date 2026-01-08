@@ -1,12 +1,16 @@
 FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /usr/src/app
+
+RUN apk add --no-cache netcat-openbsd
 
 COPY package.json yarn.lock ./
 RUN yarn install
 
 COPY . .
 
-EXPOSE 3000
+COPY docker-entrypoint.sh /usr/src/app/docker-entrypoint.sh
 
-CMD ["yarn", "start:dev"]
+ENTRYPOINT ["sh", "/usr/src/app/docker-entrypoint.sh"]
+
+CMD ["yarn", "start:debug"]

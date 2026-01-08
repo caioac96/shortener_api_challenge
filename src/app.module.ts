@@ -5,11 +5,13 @@ import { UrlModule } from 'modules/url/url.module';
 import { UsersModule } from 'modules/users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { env } from 'config/env';
+import { AuthModule } from 'modules/auth/auth.module';
 
 @Module({
   imports: [
     UrlModule,
     UsersModule,
+    AuthModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: env.DB_HOST,

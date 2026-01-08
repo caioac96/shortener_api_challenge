@@ -17,9 +17,12 @@ services:
   api:
     build: .
     container_name: shortener_api
-    command: yarn start:dev
+    command: yarn start:debug
     ports:
       - "3000:3000"
+      - "9229:9229"
+    volumes:
+      - .:/usr/src/app
     depends_on:
       - postgres
     env_file:

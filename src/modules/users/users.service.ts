@@ -48,6 +48,7 @@ export class UsersService {
       const retFind = await this.usersRepository.findOneBy({ id });
       if (!retFind)
         throw new NotFoundException('The item with the specified ID was not found');
+      return retFind;
     } catch (error) {
       throw new InternalServerErrorException('There was a problem searching for the user');
     }
