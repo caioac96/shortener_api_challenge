@@ -19,7 +19,7 @@ export class Url {
     @JoinColumn({ name: 'userId' })
     user?: User;
 
-    @Column()
+    @Column({ nullable: true })
     newUrl?: string
 
     @CreateDateColumn()

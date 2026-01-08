@@ -6,6 +6,7 @@ import { IsNull, Repository } from 'typeorm';
 import { ShortenUrlDto } from './dtos/shorten-url.dto';
 import { User } from 'entities/users.entity';
 import { UpdateUrlDto } from './dtos/update-url.dto';
+import { log } from 'utils/logger.util';
 
 @Injectable()
 export class UrlService {
@@ -27,27 +28,33 @@ export class UrlService {
   }
 
   private async createRandomSlug(originalUrl: string, userId?: string) {
-    let slug: string;
-    let attempts = 0;
+    try {
+      let slug: string;
+      let attempts = 0;
 
-    do {
-      slug = this.generateRandomSlug();
-      attempts++;
-    } while (
-      await this.urlRepository.exists({ where: { shortCode: slug } }) &&
-      attempts < 5
-    );
+      do {
+        slug = this.generateRandomSlug();
+        attempts++;
+      } while (
+        await this.urlRepository.exists({ where: { shortCode: slug } }) &&
+        attempts < 5
+      );
 
-    if (attempts === 5) {
-      throw new InternalServerErrorException('Failed to generate unique slug');
+      if (attempts === 5) {
+        throw new InternalServerErrorException('Failed to generate unique slug');
+      }
+
+      log(`Random Slug created to URL: ${originalUrl}`);
+
+      return this.urlRepository.save({
+        originalUrl,
+        shortCode: slug,
+        userId: userId ?? null,
+        accessCount: 0,
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('There was a problem creating the random shortCode');
     }
-
-    return this.urlRepository.save({
-      originalUrl,
-      shortCode: slug,
-      userId: userId ?? null,
-      accessCount: 0,
-    });
   }
 
   private async createWithAlias(
@@ -55,26 +62,33 @@ export class UrlService {
     alias: string,
     userId: string,
   ) {
-    const normalized = alias.toLowerCase();
+    try {
+      const normalized = alias.toLowerCase();
 
-    if (!/^[a-z0-9_-]{3,30}$/.test(normalized)) {
-      throw new BadRequestException('Invalid alias format');
+      if (!/^[a-z0-9_-]{3,30}$/.test(normalized)) {
+        throw new BadRequestException('Invalid alias format');
+      }
+
+      const exists = await this.urlRepository.exists({
+        where: { shortCode: normalized },
+      });
+
+      if (exists) {
+        throw new ConflictException('Alias already in use');
+      }
+
+      const retSave = this.urlRepository.save({
+        originalUrl,
+        shortCode: normalized,
+        userId,
+        accessCount: 0,
+      });
+
+      log(`Slug created to URL: ${originalUrl} with alias: ${alias}`);
+      return retSave;
+    } catch (error) {
+      throw new InternalServerErrorException('There was a problem creating the shortCode with alias');
     }
-
-    const exists = await this.urlRepository.exists({
-      where: { shortCode: normalized },
-    });
-
-    if (exists) {
-      throw new ConflictException('Alias already in use');
-    }
-
-    return this.urlRepository.save({
-      originalUrl,
-      shortCode: normalized,
-      userId,
-      accessCount: 0,
-    });
   }
 
   async findOne(id: string) {
@@ -96,46 +110,59 @@ export class UrlService {
     dto: UpdateUrlDto,
     userId: string,
   ) {
-    const url = await this.urlRepository.findOne({
-      where: {
-        shortCode,
-        deletedAt: IsNull(),
-      },
-    });
+    try {
+      const url = await this.urlRepository.findOne({
+        where: {
+          shortCode,
+          deletedAt: IsNull(),
+        },
+      });
 
-    if (!url) {
-      throw new NotFoundException('URL not found');
+      if (!url) {
+        throw new NotFoundException('URL not found');
+      }
+
+      if (url.user?.id !== userId) {
+        throw new ConflictException('You do not own this URL');
+      }
+
+      Object.assign(url, dto);
+      const retUpdate = this.urlRepository.save(url);
+
+      log(`Slug updated: ${shortCode}`);
+      return retUpdate;
+    } catch (error) {
+      throw new InternalServerErrorException('There was a problem updating the shortCode');
     }
-
-    if (url.user?.id !== userId) {
-      throw new ConflictException('You do not own this URL');
-    }
-
-    Object.assign(url, dto);
-
-    return this.urlRepository.save(url);
   }
 
   async deleteIfOwner(shortCode: string, userId: string) {
-    const url = await this.urlRepository.findOne({
-      where: {
-        shortCode,
-        deletedAt: IsNull(),
-      },
-    });
+    try {
+      const url = await this.urlRepository.findOne({
+        where: {
+          shortCode,
+          deletedAt: IsNull(),
+        },
+      });
 
-    if (!url) {
-      throw new NotFoundException('URL not found');
+      if (!url) {
+        throw new NotFoundException('URL not found');
+      }
+
+      if (url.user?.id !== userId) {
+        throw new ConflictException('You do not own this URL');
+      }
+
+      url.deletedAt = new Date();
+      const retDelete = await this.urlRepository.save(url);
+
+      if (!retDelete) throw log(`Slug NOT deleted: ${shortCode}`);
+
+      log(`Slug deleted: ${shortCode}`);
+      return { success: true };
+    } catch (error) {
+      throw new InternalServerErrorException('There was a problem deleting the shortCode');
     }
-
-    if (url.user?.id !== userId) {
-      throw new ConflictException('You do not own this URL');
-    }
-
-    url.deletedAt = new Date();
-    await this.urlRepository.save(url);
-
-    return { success: true };
   }
 
   async redirectShort(short: string) {

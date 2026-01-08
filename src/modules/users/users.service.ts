@@ -4,6 +4,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "entities/users.entity";
 import { Repository } from "typeorm";
 import { CreateUserDto } from "./dtos/create-user.dto";
+import { log } from 'utils/logger.util';
 
 @Injectable()
 export class UsersService {
@@ -31,6 +32,8 @@ export class UsersService {
         ...dto,
         password: hash,
       });
+
+      log("User created!");
 
       return this.usersRepository.save(user);
     } catch (error) {
