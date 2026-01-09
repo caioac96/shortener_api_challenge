@@ -16,15 +16,20 @@ export class UrlService {
   ) { }
 
   async shorten(dto: ShortenUrlDto, user?: User | null) {
-    if (!this.isValidUrl(dto.originalUrl)) {
-      throw new BadRequestException('Invalid URL');
-    }
+    try {
+      if (!this.isValidUrl(dto.originalUrl)) {
+        throw new BadRequestException('Invalid URL');
+      }
 
-    if (user && dto.alias) {
-      return this.createWithAlias(dto.originalUrl, dto.alias, user.id);
-    }
+      if (user && dto.alias) {
+        return this.createWithAlias(dto.originalUrl, dto.alias, user.id);
+      }
 
-    return this.createRandomSlug(dto.originalUrl, user?.id);
+      return this.createRandomSlug(dto.originalUrl, user?.id);
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new InternalServerErrorException('There was a problem in generate shorten slug');
+    }
   }
 
   private async createRandomSlug(originalUrl: string, userId?: string) {
@@ -92,7 +97,15 @@ export class UrlService {
   }
 
   async findOne(id: string) {
-    return this.urlRepository.findOneBy({ id: id });
+    try {
+      const retFind = await this.urlRepository.findOneBy({ id });
+      if (!retFind)
+        throw new NotFoundException('The item with the specified ID was not found');
+      return retFind;
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new InternalServerErrorException('There was a problem searching for the URL');
+    }
   }
 
   async findAllByUser(userId: string) {

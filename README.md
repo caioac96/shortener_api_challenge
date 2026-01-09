@@ -110,7 +110,7 @@ Para isso, preparei um script rápido para executar a Shortener API via Docker.
 ```bash
   docker compose up --build
 ```
-- Esse processo pode demorar alguns minutos, mas executará tudo o que é necessário: a instância Docker na sua máquina, configuração do Banco de Dados PostgreSQL dentro do Docker, criação das tabelas necessárias com 'migration' incluso, execução do gerenciador de pacotes, e execução da aplicação propriamente dita;
+- Esse processo pode demorar alguns minutos, mas executará tudo o que é necessário: a instância Docker na sua máquina, configuração do Banco de Dados PostgreSQL dentro do Docker, criação das tabelas necessárias, execução do gerenciador de pacotes, e execução da aplicação propriamente dita;
 - Para utilizar o serviço com autenticação de usuário, segue uma dica adicional: antes de tudo crie um usuário com 'name', 'mail' e 'password' antes de qualquer coisa, no body da requisição, no endpoint /users;
 - Com a API já em execução, qualquer dúvida sobre documentação, poderá consultar o endpoint: http://localhost:3000/api - abrirá o Swagger da API.
 
