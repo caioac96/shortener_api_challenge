@@ -115,6 +115,15 @@ Para isso, preparei um script rápido para executar a Shortener API via Docker.
 - Com a API já em execução, qualquer dúvida sobre documentação, poderá consultar o endpoint: http://localhost:3000/api - abrirá o Swagger da API.
 
 
+## Escalabilidade - Shortener API [PT-BR]:
+A escalabilidade pode ser implementada de duas formas (inicialmente), horizontal e vertical.
+
+- Na arquitetura horizontal poderíamos implementar um load balancer, como o NGINX, e disponibilizar várias instâncias da mesma Shortener API. O NGINX fazendo a gestão e distribuindo o tráfego dos dados;
+
+- Na arquitetura vertical poderíamos aumentar a capacidade dos recursos mesmo. Pensando na AWS, por exemplo, poderíamos aumentar a memória RAM, CPU, disco/armazenamento do servidor responsável por armazenar nossa Shortener API. Porém, poderia ter o impacto negativo de custo aumentado.
+
+![Diagrama de Arquitetura](src/images/shortener-api-img.jpg)
+
 
 
 
